@@ -117,24 +117,6 @@ static void knn_1query(const float *q, const float *P, int n, int d, int k,
     maxheap_destroy(&h);
 }
 
-static int save_R_csv(const char *filename, const int *R, int nq, int k) {
-    FILE *f = fopen(filename, "w");
-    if (!f) {
-        fprintf(stderr, "Erro: não consegui abrir %s para escrita.\n", filename);
-        return 0;
-    }
-    for (int i = 0; i < nq; ++i) {
-        for (int j = 0; j < k; ++j) {
-            // escreve o índice; separa colunas com ';'
-            if (j) fputc(';', f);
-            fprintf(f, "%d", R[i*k + j]);
-        }
-        fputc('\n', f);
-    }
-    fclose(f);
-    return 1;
-}
-
 
 static int salvar_timing_knn(double t_total, double t_bcast, double t_scatt, double t_comp, double t_gath) {
     FILE *fp;
@@ -269,12 +251,6 @@ int main(int argc, char** argv) {
     if (verify_flag && rank == 0) {
         verificaKNN(Q, nq, P, npp, d, k_eff, R);
     }
-
-    // if (rank == 0) {
-    // const char *csv_path = "R.csv";   
-    // if (save_R_csv(csv_path, R, nq, k_eff)) {
-    //     printf("[OK] Matriz R salva em %s (formato: nq linhas, k colunas; separador ';')\n", csv_path);
-    // }
 
 
     if (rank == 0) { free(Q); free(R); }
