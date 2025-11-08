@@ -1,7 +1,0 @@
-
-[KNN Timing]
-Total (incl. Tx P/Q, compute, Rx R): 8.969405 s
-  Bcast(P):   5.440483 s
-  Scatter(Q): 0.006300 s
-  Compute:    3.501080 s
-  Gather(R):  0.021532 s

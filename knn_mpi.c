@@ -118,26 +118,6 @@ static void knn_1query(const float *q, const float *P, int n, int d, int k,
 }
 
 
-static int salvar_timing_knn(double t_total, double t_bcast, double t_scatt, double t_comp, double t_gath) {
-    FILE *fp;
-
-    fp = fopen("tempo.txt", "w");
-
-    if (fp == NULL) {
-        fprintf(stderr, "Erro: Não foi possível abrir o arquivo 'tempo.txt' para escrita!\n");
-        return 0;
-    } else {
-        fprintf(fp, "\n[KNN Timing]\n");
-        fprintf(fp, "Total (incl. Tx P/Q, compute, Rx R): %.6f s\n", t_total);
-        fprintf(fp, "  Bcast(P):   %.6f s\n", t_bcast);
-        fprintf(fp, "  Scatter(Q): %.6f s\n", t_scatt);
-        fprintf(fp, "  Compute:    %.6f s\n", t_comp);
-        fprintf(fp, "  Gather(R):  %.6f s\n", t_gath);
-        fclose(fp);
-        printf("✅ Dados de timing salvos com sucesso em tempo.txt\n");
-    }
-    return 1;
-}
 
 //  Programa principal 
 int main(int argc, char** argv) {
@@ -236,7 +216,6 @@ int main(int argc, char** argv) {
     double t_gath  = tg1 - tg0;
 
     if (rank == 0) {
-        salvar_timing_knn(t_total, t_bcast, t_scatt, t_comp, t_gath);
 
         printf("\n[KNN Timing]\n");
         printf("Total (incl. Tx P/Q, compute, Rx R): %.6f s\n", t_total);
