@@ -47,16 +47,16 @@ static void parse_args(int argc, char** argv,
 }
 
 static void* xaligned_malloc(size_t nbytes) {
-    void *ptr = NULL;
+    // void *ptr = NULL;
 
-    #if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L
-        if (posix_memalign(&ptr, ALIGN_BYTES, nbytes) == 0) return ptr;
-    #elif __STDC_VERSION__ >= 201112L
-        // C11 aligned_alloc requer que o tamanho seja múltiplo do alinhamento
-        size_t sz = (nbytes + (ALIGN_BYTES - 1)) & ~(size_t)(ALIGN_BYTES - 1);
-        ptr = aligned_alloc(ALIGN_BYTES, sz);
-        if (ptr) return ptr;
-    #endif
+    // #if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L
+    //     if (posix_memalign(&ptr, ALIGN_BYTES, nbytes) == 0) return ptr;
+    // #elif __STDC_VERSION__ >= 201112L
+    //     // C11 aligned_alloc requer que o tamanho seja múltiplo do alinhamento
+    //     size_t sz = (nbytes + (ALIGN_BYTES - 1)) & ~(size_t)(ALIGN_BYTES - 1);
+    //     ptr = aligned_alloc(ALIGN_BYTES, sz);
+    //     if (ptr) return ptr;
+    // #endif
 
     // Fallback universal
     return malloc(nbytes);
