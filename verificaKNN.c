@@ -1,119 +1,91 @@
+// verificaKNN.c — versão reescrita usando apenas a API de max-heap do projeto.
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
 #include "maxheap.h"
+#include "verificaKNN.h"
 
-//ALUNOS:
-//João Marcelo Caboclo - GRR20221227
-//Luíza Diapp - GRR20221252
-
-// Versão inicial (stub) — imprime a matriz R linearizada.
-// O professor substituirá este arquivo por uma versão que verifica de verdade.
-
-// void verificaKNN( float *Q, int nq, float *P, int n, int D, int k, int *R ) {
-//     // note que R tem nq linhas por k colunas; acesso linear por [linha*k + coluna]
-//     printf("  ------------ VERIFICA KNN --------------- \n");
-//     for (int linha = 0; linha < nq; linha++)  {
-//         printf("knn[%d]: ", linha);
-//         for (int coluna = 0; coluna < k; coluna++)
-//             printf("%d ", R[ linha*k + coluna ]);
-//         printf("\n");
-//     }
-// }
-
-int cmp_HeapItem_asc_index_tiebreak(const void *a, const void *b) {
-    const HeapItem *pa = (const HeapItem*)a;
-    const HeapItem *pb = (const HeapItem*)b;
-    if (pa->key < pb->key) return -1;
-    if (pa->key > pb->key) return  1;
-    return (pa->idx > pb->idx) - (pa->idx < pb->idx);
+static inline float dist2_sq(const float *q, const float *p, int d) {
+    double acc = 0.0;
+    for (int i = 0; i < d; i++) {
+        double diff = (double)q[i] - (double)p[i];
+        acc += diff * diff;
+    }
+    return (float)acc;
 }
 
-/* Verificador REAL (recalcula k-NN e compara com R) — chame só com -v */
-void verificaKNN(const float *Q, int nq, float *P, int n, int d, int k, int *R, int L /*linhas a verificar*/) {
+// Ordenação final determinística (distância ↑, desempate por índice ↑)
+static int cmp_asc_key_then_idx(const void *a, const void *b) {
+    const HeapItem *x = (const HeapItem*)a;
+    const HeapItem *y = (const HeapItem*)b;
+    if (x->key < y->key) return -1;
+    if (x->key > y->key) return  1;
+    return (x->idx > y->idx) - (x->idx < y->idx);
+}
+
+void verificaKNN(const float *Q, int nq, float *P, int n, int d, int k, int *R, int L)
+{
     if (k > n) k = n;
     if (L > nq) L = nq;
-    printf("\n[Verificacao REAL] Conferindo %d linhas com k=%d ...\n", L, k);
 
-    /* buffers auxiliares por linha */
-    float *hD = (float*)malloc(sizeof(float) * k);
-    int   *hI = (int*)  malloc(sizeof(int)   * k);
-    HeapItem  *gt  = (HeapItem*)malloc(sizeof(HeapItem)  * k);
+    printf("\n[Verificacao] Conferindo %d linhas com k=%d …\n", L, k);
 
-    if (!hD || !hI || !gt) {
-        fprintf(stderr, "Falha ao alocar buffers da verificacao.\n");
-        free(hD); free(hI); free(gt);
+    // buffers auxiliares
+    HeapItem *gt = (HeapItem*)malloc((size_t)k * sizeof(HeapItem));
+    if (!gt) {
+        fprintf(stderr, "Falha ao alocar buffer da verificacao.\n");
         return;
     }
 
-    int erros = 0;
+    int linhas_com_erro = 0;
+    const double EPS = 1e-7;
 
     for (int r = 0; r < L; r++) {
         const float *q = Q + (long long)r * d;
 
-        /* 1) inicializa heap (k primeiros) */
-        for (int j = 0; j < k; j++) {
-            double acc = 0.0;
-            const float *pj = P + (long long)j * d;
-            for (int t = 0; t < d; t++) {
-                double diff = (double)q[t] - (double)pj[t];
-                acc += diff * diff;
-            }
-            hD[j] = (float)acc;
-            hI[j] = j;
-        }
-        /* build max-heap (método de Floyd) */
-        for (int i = (k >> 1) - 1; i >= 0; i--) {
-            int x = i;
-            while (1) {
-                int l = 2*x + 1, rr = 2*x + 2, m = x;
-                if (l  < k && hD[l]  > hD[m]) m = l;
-                if (rr < k && hD[rr] > hD[m]) m = rr;
-                if (m != x) {
-                    float td = hD[x]; hD[x] = hD[m]; hD[m] = td;
-                    int   ti = hI[x]; hI[x] = hI[m]; hI[m] = ti;
-                    x = m;
-                } else break;
-            }
-        }
+        // 1) constrói verdade-terra por força bruta usando a API do MaxHeap
+        MaxHeap h;
+        maxheap_create(&h, k);
 
-        /* 2) varre o resto de P mantendo k melhores (decreaseMax implícito) */
-        for (int j = k; j < n; j++) {
-            double acc = 0.0;
-            const float *pj = P + (long long)j * d;
-            for (int t = 0; t < d; t++) {
-                double diff = (double)q[t] - (double)pj[t];
-                acc += diff * diff;
-            }
-            float d2 = (float)acc;
-            if (d2 < hD[0]) {
-                hD[0] = d2;
-                hI[0] = j;
-                /* heapify_down na raiz */
-                int x = 0;
-                while (1) {
-                    int l = 2*x + 1, rr = 2*x + 2, m = x;
-                    if (l  < k && hD[l]  > hD[m]) m = l;
-                    if (rr < k && hD[rr] > hD[m]) m = rr;
-                    if (m != x) {
-                        float td = hD[x]; hD[x] = hD[m]; hD[m] = td;
-                        int   ti = hI[x]; hI[x] = hI[m]; hI[m] = ti;
-                        x = m;
-                    } else break;
+        for (int j = 0; j < n; j++) {
+            float d2 = dist2_sq(q, P + (long long)j * d, d);
+
+            if (h.size < h.capacity) {
+                maxheap_push(&h, d2, j);
+            } else {
+                // mantém os k menores por (dist, idx)
+                const HeapItem *root = &h.data[0];
+                if (d2 < root->key || (d2 == root->key && j < root->idx)) {
+                    maxheap_decrease_max(&h, d2, j);
                 }
             }
         }
 
-        /* 3) ordena ground truth por distância crescente (determinístico) */
-        for (int t = 0; t < k; t++) { gt[t].key = hD[t]; gt[t].idx = hI[t]; }
-        qsort(gt, k, sizeof(HeapItem), cmp_HeapItem_asc_index_tiebreak);
+        // Dump em ordem crescente (dist, idx) para comparar com R
+        int got = maxheap_dump_sorted_ascending(&h, gt, k);
+        if (got != k) {
+            // fallback: copia manualmente e ordena (não deveria acontecer)
+            for (int i = 0; i < h.size && i < k; ++i) gt[i] = h.data[i];
+            qsort(gt, h.size, sizeof(HeapItem), cmp_asc_key_then_idx);
+        }
+        maxheap_destroy(&h);
 
-        /* 4) validações */
+        // 2) validações da linha retornada
         const int *row = R + (long long)r * k;
         int ok = 1;
 
-        /* índices válidos e não-decréscimo das distâncias */
+        // 2.1) índices válidos
         for (int t = 0; t < k; t++) {
-            if (row[t] < 0 || row[t] >= n) { ok = 0; break; }
-            if (t > 0) {
+            if (row[t] < 0 || row[t] >= n) 
+            { ok = 0; printf("\n1\n");break; }
+        }
+
+        // 2.2) distâncias não-decrecentes em R
+        if (ok) {
+            for (int t = 1; t < k; t++) {
                 double dprev = 0.0, dcurr = 0.0;
                 const float *pprev = P + (long long)row[t-1] * d;
                 const float *pcurr = P + (long long)row[t]   * d;
@@ -122,28 +94,63 @@ void verificaKNN(const float *Q, int nq, float *P, int n, int d, int k, int *R, 
                     double dc = (double)q[u] - (double)pcurr[u];
                     dprev += dp*dp; dcurr += dc*dc;
                 }
-                if (dprev > dcurr + 1e-6) ok = 0;
+                if (fabs(dprev - dcurr) < EPS) { 
+                    ok = 0; 
+                    printf("\n2\n");
+                    break; }
             }
         }
 
-        /* compara com ground truth (índices e ordem) */
-        for (int t = 0; t < k && ok; t++) {
-            if (row[t] != gt[t].idx) ok = 0;
+        // 2.3) igualdade com a verdade-terra (mesma ordem)
+        if (ok) {
+            for (int t = 0; t < k; t++) {
+                if (row[t] != gt[t].idx) 
+                { ok = 0; printf("\n3\n"); break; }
+            }
         }
 
         if (!ok) {
-            erros++;
+            linhas_com_erro++;
             printf("Linha %d: MISMATCH\n", r);
-            printf("  R:  "); for (int t = 0; t < k; t++) printf("%d ", row[t]);
-            printf("\n  GT: "); for (int t = 0; t < k; t++) printf("%d ", gt[t].idx);
+
+            // mostra sequência R e GT
+            printf("  R : ");
+            for (int t = 0; t < k; t++) printf("%d ", row[t]);
+            printf("\n  GT: ");
+            for (int t = 0; t < k; t++) printf("%d ", gt[t].idx);
             printf("\n");
+
+            // contexto na primeira divergência
+            int pos = -1;
+            for (int t = 0; t < k; ++t) { if (row[t] != gt[t].idx) { pos = t; break; } }
+            if (pos >= 0) {
+                int a = (pos - 5 < 0) ? 0 : pos - 5;
+                int b = (pos + 5 >= k) ? k - 1 : pos + 5;
+                printf("  Contexto [%d..%d]:\n", a, b);
+                for (int t = a; t <= b; ++t) {
+                    int ir = row[t];
+                    int ig = gt[t].idx;
+                    double dr = 0.0, dg = 0.0;
+                    const float *pr = P + (long long)ir * d;
+                    const float *pg = P + (long long)ig * d;
+                    for (int u = 0; u < d; ++u) {
+                        double rr = (double)q[u] - (double)pr[u];
+                        double gg = (double)q[u] - (double)pg[u];
+                        dr += rr*rr; dg += gg*gg;
+                    }
+                    printf("    t=%d: R[%d]=%d d2=%.9g | GT[%d]=%d d2=%.9g\n",
+                           t, t, ir, dr, t, ig, dg);
+                }
+            }
         } else {
             printf("Linha %d: OK\n", r);
         }
     }
 
-    if (erros == 0) printf(">> Verificacao REAL: tudo OK nas %d linhas.\n", L);
-    else            printf(">> Verificacao REAL: %d linhas com divergencia.\n", erros);
+    if (linhas_com_erro == 0)
+        printf(">> Verificacao: tudo OK nas %d linhas.\n", L);
+    else
+        printf(">> Verificacao: %d linha(s) com divergencia.\n", linhas_com_erro);
 
-    free(hD); free(hI); free(gt);
+    free(gt);
 }

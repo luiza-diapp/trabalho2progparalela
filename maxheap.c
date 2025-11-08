@@ -19,11 +19,11 @@
 
 // Compara dois itens do heap, priorizando a chave e usando o índice para desempate.
 static int item_greater(const HeapItem *a, const HeapItem *b) {
-    if (!(a->key) && !(b->key)) return -1;
     if (a->key > b->key) return 1;
     if (a->key < b->key) return 0;
-    return a->idx > b->idx;
+    return a->idx > b->idx; // tiebreak por índice maior = "maior" no max-heap
 }
+
 
 // Move um item para cima no heap para restaurar a propriedade Max-Heap após uma inserção.
 static void heapify_up(MaxHeap *heap, int posicao) {

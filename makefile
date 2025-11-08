@@ -11,8 +11,8 @@ LDFLAGS = -lm
 TARGET = knn_mpi
 
 # Arquivos fonte
-SRCS = knn_mpi.c maxheap.c
-HDRS = maxheap.h
+SRCS = knn_mpi.c maxheap.c verificaKNN.c
+HDRS = maxheap.h verificaKNN.h
 
 # Regra padrão: compilar tudo
 all: $(TARGET)

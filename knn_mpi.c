@@ -16,7 +16,7 @@
 #include <math.h>
 
 #include "maxheap.h"  
-#include "verificaKNN.c"
+#include "verificaKNN.h"
 
 #ifndef ALIGN_BYTES
 #define ALIGN_BYTES 64
@@ -228,7 +228,7 @@ int main(int argc, char** argv) {
 
     //  Verificação (se -v), fora do tempo do KNN 
     if (verify_flag && rank == 0) {
-        verificaKNN(Q, nq, P, npp, d, k_eff, R);
+        verificaKNN(Q, nq, P, npp, d, k_eff, R, 10);
     }
 
 
