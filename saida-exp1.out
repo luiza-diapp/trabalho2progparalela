@@ -1,0 +1,9 @@
+Params: nq=128 npp=400000 d=300 k=1024  procs=1  verify=off
+✅ Dados de timing salvos com sucesso em tempo.txt
+
+[KNN Timing]
+Total (incl. Tx P/Q, compute, Rx R): 28.305594 s
+  Bcast(P):   0.000002 s
+  Scatter(Q): 0.000152 s
+  Compute:    28.304908 s
+  Gather(R):  0.000525 s
