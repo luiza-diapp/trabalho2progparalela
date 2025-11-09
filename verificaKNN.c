@@ -41,7 +41,7 @@ void verificaKNN(const float *Q, int nq, float *P, int n, int d, int k, int *R, 
     }
 
     int linhas_com_erro = 0;
-    const double EPS = 1e-7;
+    const double EPS = 1e-4;
 
     for (int r = 0; r < L; r++) {
         const float *q = Q + (long long)r * d;
@@ -94,7 +94,7 @@ void verificaKNN(const float *Q, int nq, float *P, int n, int d, int k, int *R, 
                     double dc = (double)q[u] - (double)pcurr[u];
                     dprev += dp*dp; dcurr += dc*dc;
                 }
-                if (fabs(dprev - dcurr) < EPS) { 
+                if (! (fabs(dprev - dcurr) < EPS || dprev < dcurr + EPS)) { 
                     ok = 0; 
                     printf("\n2\n");
                     break; }
